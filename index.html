@@ -115,6 +115,39 @@ function newCloud(x) {
 const G = {};
 let best = +(localStorage.getItem("bunnyBest") || 0);
 
+// ---- global top-7 leaderboard (shared JSON store; harmless if unreachable) ----
+const LB_URL = "https://api.restful-api.dev/objects/ff8081819d82fab6019f4d0f7d9144c0";
+let top7 = null;        // null = unavailable/loading
+let lastEntry = null;   // highlight the player's fresh entry
+
+async function lbFetch() {
+  try {
+    const r = await fetch(LB_URL, { cache: "no-store" });
+    const j = await r.json();
+    top7 = (j.data && Array.isArray(j.data.scores)) ? j.data.scores : [];
+  } catch { top7 = null; }
+}
+
+async function lbSubmit(score) {
+  const s = Math.max(0, Math.min(999999, Math.floor(score)));
+  await lbFetch();
+  if (top7 === null) return;
+  if (top7.length >= 7 && s <= top7[top7.length - 1].s) return;
+  let name = prompt("GLOBAL TOP 7! Enter your name:", localStorage.getItem("bunnyName") || "");
+  if (name === null) return;
+  name = name.replace(/[^A-Za-z0-9 _\-]/g, "").trim().slice(0, 10).toUpperCase() || "BUNNY";
+  localStorage.setItem("bunnyName", name);
+  lastEntry = { n: name, s };
+  top7.push(lastEntry);
+  top7.sort((a, b) => b.s - a.s);
+  top7 = top7.slice(0, 7);
+  try {
+    await fetch(LB_URL, { method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "bunny_top7", data: { scores: top7 } }) });
+  } catch {}
+}
+lbFetch();
+
 function reset() {
   G.bunnyX = 90; G.bunnyY = GROUND_Y; G.velY = 0; G.onGround = true;
   G.speed = 5; G.score = 0; G.dist = 0; G.animT = 0; G.dead = false;
@@ -167,6 +200,7 @@ function update(dt) {
       G.dead = true;
       best = Math.max(best, Math.floor(G.score));
       localStorage.setItem("bunnyBest", best);
+      lbSubmit(G.score);
       break;
     }
   }
@@ -212,14 +246,34 @@ function draw() {
   ctx.fillText(`BEST ${pad(best)}   SPEED ${G.speed.toFixed(1)}`, 16, 56);
 
   if (G.dead) {
-    ctx.fillStyle = "rgba(0,0,0,.43)"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "#fff"; ctx.textAlign = "center";
-    ctx.font = "bold 48px Consolas, monospace";
-    ctx.fillText("SPLAT!", W/2, 165);
-    ctx.font = "bold 24px Consolas, monospace";
-    ctx.fillText(`You ran ${Math.floor(G.score)} points`, W/2, 210);
+    ctx.font = "bold 44px Consolas, monospace";
+    ctx.fillText("SPLAT!", W/2, 78);
+    ctx.font = "bold 22px Consolas, monospace";
+    ctx.fillText(`You ran ${Math.floor(G.score)} points`, W/2, 115);
+    ctx.font = "bold 17px Consolas, monospace";
+    ctx.fillStyle = "#ffe68c";
+    ctx.fillText("— GLOBAL TOP 7 —", W/2, 155);
     ctx.font = "16px Consolas, monospace";
-    ctx.fillText("Press SPACE or TAP to run again", W/2, 245);
+    if (top7 === null) {
+      ctx.fillStyle = "#ccc";
+      ctx.fillText("leaderboard offline", W/2, 185);
+    } else if (top7.length === 0) {
+      ctx.fillStyle = "#ccc";
+      ctx.fillText("no scores yet — be the first!", W/2, 185);
+    } else {
+      for (let i = 0; i < top7.length; i++) {
+        const e = top7[i];
+        const mine = lastEntry && e.n === lastEntry.n && e.s === lastEntry.s;
+        ctx.fillStyle = mine ? "#ffe68c" : "#fff";
+        const row = `${i + 1}. ${String(e.n).padEnd(12)} ${String(e.s).padStart(6)}`;
+        ctx.fillText(row, W/2, 185 + i * 26);
+      }
+    }
+    ctx.fillStyle = "#fff";
+    ctx.font = "15px Consolas, monospace";
+    ctx.fillText("Press SPACE or TAP to run again", W/2, 400);
     ctx.textAlign = "left";
   }
 }

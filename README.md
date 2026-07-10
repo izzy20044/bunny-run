@@ -19,6 +19,8 @@ A tiny 2D endless runner. You're a bunny. Logs happen. Jump them.
 - The game gets faster the longer you survive (speed 5 → 16).
 - As speed rises, gravity rises too — same jump height, quicker landings — so you can react to tighter log spacing.
 - The run only ends when you hit a log. Best score is saved in your browser.
+- **Global Top 7** 🌍 — crack the seven best runs worldwide and you'll be asked
+  for a name; the board updates live for everyone after each qualifying run.
 
 ## Windows version
 
