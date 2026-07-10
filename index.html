@@ -230,7 +230,7 @@ cv.addEventListener("pointerdown", press);
 
 let last = performance.now();
 function loop(now) {
-  const dt = Math.min((now - last) / 1000, 0.05);
+  const dt = Math.max(0, Math.min((now - last) / 1000, 0.05));
   last = now;
   update(dt);
   draw();
