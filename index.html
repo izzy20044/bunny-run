@@ -124,8 +124,11 @@ function reset() {
 }
 reset();
 
+// heavier gravity at higher speed: same jump height, quicker landing
+function gravScale() { return 1 + (G.speed - 5) / 18; }
+
 function jump() {
-  if (G.onGround && !G.dead) { G.velY = -14; G.onGround = false; }
+  if (G.onGround && !G.dead) { G.velY = -14 * gravScale(); G.onGround = false; }
 }
 
 function spawnLog() {
@@ -141,7 +144,7 @@ function update(dt) {
   const move = G.speed * f;
   G.dist += move; G.score = G.dist / 10;
 
-  G.velY += 0.55 * f;
+  G.velY += 0.55 * gravScale() * gravScale() * f;
   G.bunnyY += G.velY * f;
   if (G.bunnyY >= GROUND_Y) { G.bunnyY = GROUND_Y; G.velY = 0; G.onGround = true; }
   G.animT += dt * (6 + G.speed * 0.8);
